@@ -8,6 +8,16 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+def paginate_questions(request, selection):
+      page = request.args.get('page', 1, type=int)
+      start = (page -1) * QUESTIONS_PER_PAGE
+      end = start + QUESTIONS_PER_PAGE
+
+      questions = [question.format() for question in selection]
+      current_questions = questions[start:end]
+
+      return current_questions
+
 def create_app(test_config=None):
   # create and configure the app
   app = Flask(__name__)
@@ -16,9 +26,7 @@ def create_app(test_config=None):
   '''
   @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   '''
-  app = Flask(__name__, instance_relative_config=True)
   CORS(app)
-  cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
   '''
   @TODO: Use the after_request decorator to set Access-Control-Allow
@@ -34,8 +42,16 @@ def create_app(test_config=None):
   Create an endpoint to handle GET requests 
   for all available categories.
   '''
-  @app.route('/')
-  
+  @app.route('/categories')
+  def retrieve_categories():
+        categories = Category.query.order_by(Category.type).all()
+
+        if len(categories)==0:
+              abort(404)
+        return jsonify[{
+          "success": True,
+          "categories": {category.id: category.type for category in categories}
+        }]
 
 
   '''
@@ -51,6 +67,24 @@ def create_app(test_config=None):
   Clicking on the page numbers should update the questions. 
   '''
 
+  @app.route('/questions', methods=['GET'])
+  def retrieve_questions():
+        selection = Question.query.order_by(Question.id).all()
+        current_questions = paginate_questions(request, selection)
+
+        categories = Category.query.order_by(Category.type).all()
+
+        if len(current_questions)==0:
+              abort(404)
+        return jsonify({
+          "success": True,
+          "questions": current_questions,
+          "categories": {category.id: category.type for category in categories},
+          "current_category": None,
+          "total_questions": len(selection)
+        })
+
+
   '''
   @TODO: 
   Create an endpoint to DELETE question using a question ID. 
@@ -59,6 +93,9 @@ def create_app(test_config=None):
   This removal will persist in the database and when you refresh the page. 
   '''
 
+  @app.route('/questions/<int:question_id>', methods=['DELETE'])
+  def delete_question(question_id):
+        
   '''
   @TODO: 
   Create an endpoint to POST a new question, 
