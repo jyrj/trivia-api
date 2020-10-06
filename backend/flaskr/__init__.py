@@ -134,20 +134,35 @@ def create_app(test_config=None):
         new_answer = body.get('answer', None)
         new_category = body.get('category', None)
         new_difficulty = body.get('difficulty', None)
+        search = body.get('searchTerm', None)
+        
 
         try:
-              question = Question(question=new_question, answer=new_answer, category= new_category, difficulty = new_difficulty)
-              question.insert()
+              if search:
+                    selection = Question.query.order_by(Question.id).filter(Question.question.ilike('%{}'.format(search)))
+                    print(selection)
+                    current_questions = paginate_questions(request, selection)
 
-              selection = Question.query.order_by(Question.id).all()
-              current_questions = paginate_questions(request, selection)
-        
-              return ({
-                    "success": True,
-                    "created": question.id,
-                    "questions": current_questions,
-                    "total_questions": len(Question.query.all())
-              })
+                    return({
+                          "success": True,
+                          "questions": current_questions,
+                          "total_questions": len(selection.all())
+                    })
+
+
+              else:
+                    question = Question(question=new_question, answer=new_answer, category= new_category, difficulty = new_difficulty)
+                    question.insert()
+
+                    selection = Question.query.order_by(Question.id).all()
+                    current_questions = paginate_questions(request, selection)
+            
+                    return ({
+                          "success": True,
+                          "created": question.id,
+                          "questions": current_questions,
+                          "total_questions": len(Question.query.all())
+                    })
 
         except:
               abort(422)
