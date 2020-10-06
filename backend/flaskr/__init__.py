@@ -96,20 +96,17 @@ def create_app(test_config=None):
   @app.route('/questions/<int:question_id>', methods=['DELETE'])
   def delete_question(question_id):
         try:
-          question = Question.query.filter(Question.id == question_id).one_or_more()
+          question = Question.query.get(question_id)
 
           if question is None:
                 abort(404)
           
           question.delete()
-          selection = Question.query.order_by(Question.id).all()
-          current_questions = paginate_questions(request, selection)
+          
 
           return jsonify({
             "success": True,
             "deleted": question_id,
-            "questions": current_questions,
-            "total_questions": len(Question.query.all())
           })
         except:
           abort(422)
@@ -127,7 +124,7 @@ def create_app(test_config=None):
   '''
 
   @app.route('/questions', methods= ['POST'])
-  def create_question():
+  def create_or_search_question():
         body = request.get_json()
 
         new_question = body.get('question', None)
@@ -139,14 +136,13 @@ def create_app(test_config=None):
 
         try:
               if search:
-                    selection = Question.query.order_by(Question.id).filter(Question.question.ilike('%{}'.format(search)))
-                    print(selection)
-                    current_questions = paginate_questions(request, selection)
+                    selection = Question.query.filter(Question.question.ilike(f'%{search}%')).all()
 
                     return({
                           "success": True,
-                          "questions": current_questions,
-                          "total_questions": len(selection.all())
+                          "questions": [question.format() for question in selection],
+                          "total_questions": len(selection),
+                          "current_category": None
                     })
 
 
@@ -178,7 +174,7 @@ def create_app(test_config=None):
   only question that include that string within their question. 
   Try using the word "title" to start. 
   '''
-  #Implemented with @app.route POST endpoint above
+  #Implemented with create_or_search_question
 
   '''
   @TODO: 
@@ -188,6 +184,10 @@ def create_app(test_config=None):
   categories in the left column will cause only questions of that 
   category to be shown. 
   '''
+
+  #@app.route('/categories/<int:category_id>/questions', method= ['GET'])
+  #def get_category_questions(category_id):
+
 
 
   '''
