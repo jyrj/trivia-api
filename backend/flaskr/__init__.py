@@ -185,8 +185,20 @@ def create_app(test_config=None):
   category to be shown. 
   '''
 
-  #@app.route('/categories/<int:category_id>/questions', method= ['GET'])
-  #def get_category_questions(category_id):
+  @app.route('/categories/<int:category_id>/questions', methods= ['GET'])
+  def get_category_questions(category_id):
+
+        try:
+              questions = Question.query.filter(Question.category == str(category_id)).all()
+              print(questions)
+              return jsonify({
+                    "success": True,
+                    "questions": [question.format() for question in questions],
+                    "total_questions": len(questions),
+                    "current_category": category_id
+              })
+        except:
+              abort(404)
 
 
 
@@ -202,11 +214,43 @@ def create_app(test_config=None):
   and shown whether they were correct or not. 
   '''
 
+  @app.route('/quizzes', methods=['POST'])
+  def play_quiz():
+        try:
+            body = request.get_json()
+
+            if not('quiz_category' in body and 'previous_questions' in body):
+                  abort(422)
+            category = body.get('quiz_category')
+            previous_questions = body.get('previous_questions')
+
+            if category['type']=='click':
+                  available_questions = Question.query.filter(Question.id.notin_((previous_questions))).all()
+
+            else:
+                  available_questions = Question.query.filter_by(category=category['id']).filter(Question.id.notin_((previous_questions))).all()
+
+            new_question = available_questions[random.randrange(0, len(available_questions))].format() if len(available_questions) > 0 else None
+
+            return ({
+                  "success": True,
+                  "question": new_question
+            })
+
+        except:
+              abort(422)
+
+
+        
+        
+        return None
+
   '''
   @TODO: 
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
+  
   
   return app
 
